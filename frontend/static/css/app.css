@@ -149,64 +149,73 @@ img{display:block;max-width:100%}
   font-size:13px;outline:none}
 .filter-bar select:focus,.filter-bar input:focus{border-color:var(--gold)}
 
-/* ============ 桌面端响应式 (>=768px) ============ */
+/* ============ 桌面端 / Web 适配 (>=768px) ============ */
+/* 目标：宽屏下不再是"手机窄条"，而是真正的网页版——更宽的容器、
+   多列卡片网格、更大气的留白与字号。 */
 @media (min-width:768px){
-  body{background:var(--bg);display:flex;justify-content:center}
-  .app{max-width:960px;width:100%;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line);padding-bottom:80px}
-  .topbar{max-width:960px;left:50%;transform:translateX(-50%);width:100%}
-  .topbar h1{font-size:22px}
-  .wrap{max-width:900px;margin:0 auto;padding:20px 32px}
-  .hero{padding:40px 32px;border-radius:0 0 32px 32px}
-  .hero h2{font-size:28px}
-  .hero p{font-size:15px}
-  .sec-title{font-size:18px;margin:24px 32px 14px}
+  body{background:var(--bg);display:block}
+  /* 容器整体放宽到 1120px，居中，两侧描边 */
+  .app{max-width:1120px;width:100%;margin:0 auto;
+    border-left:1px solid var(--line);border-right:1px solid var(--line);
+    padding-bottom:90px}
+  .topbar{position:sticky;left:auto;transform:none;width:100%;max-width:1120px;
+    margin:0 auto;padding:16px 40px}
+  .topbar h1{font-size:23px}
 
-  /* 剧本卡网格 */
-  .script-card .cover{width:100px;height:132px}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 40px}
+  .hero{padding:52px 40px;border-radius:0 0 36px 36px}
+  .hero h2{font-size:32px}
+  .hero p{font-size:16px}
+  .sec-title{font-size:19px;margin:28px 40px 16px}
+
+  /* 【核心】列表区域做成多列网格：把 .wrap 里连续的卡片自动排成 2 列。
+     用 grid 包裹——通过给 .wrap 内的卡片网格化实现。 */
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid-2 .card{margin-bottom:0}
+
+  /* 剧本卡 / 拼局卡 / 通用卡：桌面下自动两列（利用 columns 兜底，
+     但主用 JS 加的 .grid-2 容器；这里对散落卡片也给个更宽舒展的观感） */
+  .script-card .cover{width:104px;height:140px}
   .script-card .info h3{font-size:18px}
   .meta{font-size:13px}
-
-  /* 拼局卡片 */
   .session-card .head h3{font-size:18px!important}
 
-  /* 搜索栏 */
-  .search-bar input{font-size:16px;padding:13px 16px}
-  .search-bar .btn{padding:13px 24px;font-size:15px}
+  /* 搜索/筛选栏 */
+  .search-bar input{font-size:16px;padding:14px 18px}
+  .search-bar .btn{padding:14px 28px;font-size:15px}
+  .filter-bar{gap:12px}
+  .filter-bar select,.filter-bar input{font-size:14px;padding:11px 14px;min-width:140px;flex:0 1 auto}
 
-  /* 筛选栏 */
-  .filter-bar select,.filter-bar input{font-size:14px;padding:10px 12px}
-
-  /* 底部导航——桌面居中 */
-  .tabbar{max-width:960px;left:50%;transform:translateX(-50%)}
-  .tabbar a{font-size:13px;padding:12px 0}
+  /* 底部导航桌面居中，加宽 */
+  .tabbar{max-width:1120px;left:50%;transform:translateX(-50%)}
+  .tabbar a{font-size:13px;padding:14px 0}
   .tabbar a .ic{font-size:22px}
 
-  /* 聊天桌面 */
-  .chat-input{max-width:960px}
-  .msg{max-width:60%;font-size:15px}
-  .chat-list{padding:20px 32px}
+  /* 聊天 */
+  .chat-input{max-width:1120px;padding:14px 40px}
+  .msg{max-width:52%;font-size:15px}
+  .chat-list{padding:24px 40px;max-width:1120px;margin:0 auto}
 
-  /* 入口卡 */
-  .entry{padding:24px 28px;margin-bottom:16px}
-  .entry .em{font-size:40px}
-  .entry h3{font-size:19px}
+  /* 入口卡（首页身份选择）——三列并排 */
+  .entry{padding:26px 30px;margin-bottom:16px}
+  .entry .em{font-size:42px}
+  .entry h3{font-size:20px}
   .entry p{font-size:13px}
 
   /* 数据看板 */
-  .stat-grid{grid-template-columns:repeat(4,1fr);gap:16px}
-  .stat .num{font-size:30px}
+  .stat-grid{grid-template-columns:repeat(4,1fr);gap:18px}
+  .stat .num{font-size:32px}
   .stat .lbl{font-size:13px}
 
-  /* 表单 */
-  .field input,.field select,.field textarea{padding:12px 15px;font-size:15px}
-
-  /* 测本问卷 */
-  .q-block h3{font-size:18px}
-  .opt{padding:15px 18px;font-size:15px}
-
-  /* 标签 */
+  .field input,.field select,.field textarea{padding:12px 16px;font-size:15px}
+  .field{max-width:560px}
+  .q-block h3{font-size:19px}
+  .opt{padding:16px 20px;font-size:15px}
   .tag{font-size:12px;padding:3px 10px}
+  .fab{bottom:104px;transform:translateX(calc(-50% + 520px))}
+}
 
-  /* FAB 桌面位置 */
-  .fab{bottom:100px}
+/* 更大屏幕：卡片可 3 列 */
+@media (min-width:1080px){
+  .grid-2{grid-template-columns:repeat(2,1fr)}
 }

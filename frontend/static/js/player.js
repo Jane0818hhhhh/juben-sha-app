@@ -14,24 +14,27 @@ function go(name){
 // ---------- 首页 ----------
 async function renderHome(){
   app.innerHTML = `<div class="hero"><h2>今天，想玩点什么本？</h2>
-    <p>搜索你想玩的本，测测你适合演哪个角色</p></div>
+    <p>拼车 · 测本测角色 · 角色陪伴，一站搞定</p></div>
     <div class="wrap">
-      <div class="search-bar" style="margin-bottom:16px">
-        <input id="home-search" placeholder="搜索剧本名称，如「流氓叙事」…" onkeydown="if(event.key==='Enter')searchAndTest(document.getElementById('home-search').value)">
-        <button class="btn" onclick="searchAndTest(document.getElementById('home-search').value)">搜本测角色</button>
+      <div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:16px" onclick="go('test')">
+        <div style="font-size:28px">🔮</div>
+        <div style="flex:1"><b>搜本测角色</b><div class="muted" style="font-size:12px">搜你想玩的本，测测适合演谁</div></div>
+        <div class="gold" style="font-size:20px">›</div>
       </div>
       <div class="sec-title">🔥 热门拼车 <span class="more" onclick="go('plaza')">全部 ›</span></div>
-      <div id="home-sessions" class="loading">加载中…</div>
+      <div id="home-sessions" class="loading grid-2">加载中…</div>
       <div class="sec-title">📊 2025 高分好本 <span class="more" onclick="go('find')">全部 ›</span></div>
-      <div id="home-scripts" class="loading">加载中…</div>
+      <div id="home-scripts" class="loading grid-2">加载中…</div>
     </div>`;
   const ss = await API.get('/api/player/sessions');
-  document.getElementById('home-sessions').innerHTML = ss.slice(0,2).map(sessionCard).join('')||'<div class="empty">暂无拼车局</div>';
+  const hs=document.getElementById('home-sessions'); hs.className='grid-2';
+  hs.innerHTML = ss.slice(0,4).map(sessionCard).join('')||'<div class="empty">暂无拼车局</div>';
   const sc = await API.get('/api/player/scripts');
   curScripts = sc;
   // 高分排序
   sc.sort((a,b)=>b.rating-a.rating);
-  document.getElementById('home-scripts').innerHTML = sc.slice(0,5).map(scriptCard).join('');
+  const hsc=document.getElementById('home-scripts'); hsc.className='grid-2';
+  hsc.innerHTML = sc.slice(0,6).map(scriptCard).join('');
 }
 
 function searchAndTest(kw){
@@ -132,7 +135,8 @@ async function loadPlaza(){
   if(plazaFilter.city) ss = ss.filter(s=>s.city===plazaFilter.city);
   if(plazaFilter.date) ss = ss.filter(s=>s.start_time&&s.start_time.startsWith(plazaFilter.date));
   if(plazaFilter.seat) ss = ss.filter(s=>s.seat_type===plazaFilter.seat);
-  box.innerHTML = ss.map(sessionCard).join('')||'<div class="empty">暂无匹配的拼车局<br><span style="font-size:12px">试试放宽筛选条件</span></div>';
+  box.className='grid-2';
+  box.innerHTML = ss.map(sessionCard).join('')||'<div class="empty" style="grid-column:1/-1">暂无匹配的拼车局<br><span style="font-size:12px">试试放宽筛选条件</span></div>';
 }
 
 // ---------- 卡片模板 ----------
@@ -165,14 +169,35 @@ function sessionCard(s){
   </div>`;
 }
 
-// ---------- 大问卷推本（保留在 test tab 作为辅助入口）----------
+// ---------- 测本 Tab：搜本测角色（主入口）----------
 let qList=[], answers={};
 async function renderTest(){
+  // 确保剧本库已加载（供搜索匹配）
+  if(!curScripts.length){ curScripts = await API.get('/api/player/scripts'); }
   app.innerHTML = `<div class="wrap">
-    <div class="sec-title">🔮 大问卷推本（辅助入口）</div>
-    <p class="muted" style="margin:0 0 16px">不确定玩什么？答题让 AI 给你推本。</p>
-    <p class="muted" style="margin:0 0 16px;font-size:12px">💡 推荐用首页「搜索→测角色」功能，更精准</p>
-    <div id="quiz"></div></div>`;
+    <div class="sec-title">🔮 测本 · 搜本测角色</div>
+    <p class="muted" style="margin:0 0 14px">搜索你想玩的本，测测你适合演哪个角色</p>
+    <div class="search-bar" style="margin-bottom:16px">
+      <input id="test-search" placeholder="搜索剧本名称，如「流氓叙事」…" onkeydown="if(event.key==='Enter')searchAndTest(document.getElementById('test-search').value)">
+      <button class="btn" onclick="searchAndTest(document.getElementById('test-search').value)">搜本测角色</button>
+    </div>
+    <div class="sec-title" style="margin-left:0">🔥 热门本，点开直接测</div>
+    <div id="test-hot" class="loading">加载中…</div>
+    <div class="divider"></div>
+    <p class="muted" style="font-size:12px">不确定玩什么？也可以用 <a class="gold" onclick="renderQuizEntry()" style="cursor:pointer">大问卷推本 ›</a></p>
+    </div>`;
+  // 热门本快捷入口（按评分排序取前 6）
+  const sc = [...curScripts].sort((a,b)=>b.rating-a.rating).slice(0,6);
+  document.getElementById('test-hot').innerHTML = sc.map(scriptCard).join('') || '<div class="empty">暂无剧本</div>';
+}
+
+// 大问卷推本（改为二级入口）
+async function renderQuizEntry(){
+  app.innerHTML = `<div class="wrap">
+    <div class="sec-title">🔮 大问卷推本</div>
+    <p class="muted" style="margin:0 0 16px">答几道题，AI 给你推荐适合的本。</p>
+    <div id="quiz"></div>
+    <button class="btn block ghost" style="margin-top:12px" onclick="renderTest()">← 返回搜本测角色</button></div>`;
   qList = await API.get('/api/player/test/questionnaire');
   answers={};
   renderQuiz();
@@ -220,8 +245,9 @@ let findMode='script', findCat='全部';
 function filterCat(c,el){findCat=c;el.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');loadFind();}
 function findTab(m,el){findMode=m;if(el){el.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}loadFind();}
 async function loadFind(){
-  const box=document.getElementById('find-list'); box.innerHTML='<div class="loading">加载中…</div>';
+  const box=document.getElementById('find-list'); box.className='wrap'; box.innerHTML='<div class="loading">加载中…</div>';
   if(findMode==='script'){
+    box.className='wrap grid-2';
     const q = findCat==='全部'?'':'?category='+encodeURIComponent(findCat);
     const sc = await API.get('/api/player/scripts'+q);
     sc.sort((a,b)=>b.rating-a.rating);
@@ -233,6 +259,7 @@ async function loadFind(){
       <p class="muted" style="font-size:12px;margin-top:4px">${esc(s.intro||'').substring(0,60)}…</p>
       <button class="btn ghost" style="margin-top:4px;padding:4px 10px;font-size:11px">测适合角色 ›</button></div></div>`).join('');
   }else if(findMode==='shop'){
+    box.className='wrap grid-2';
     const sh=await API.get('/api/player/shops');
     box.innerHTML=sh.map(s=>`<div class="card" onclick="shopDetail(${s.id})">
       <div class="row"><img class="cover" style="width:70px;height:70px;border-radius:10px;object-fit:cover" src="${s.cover}" onerror="this.style.opacity=.3">
@@ -240,6 +267,7 @@ async function loadFind(){
       <div class="meta">${esc(s.city)} · ${s.room_count}间房</div>
       <p class="muted" style="font-size:12px">${esc(s.intro)}</p></div></div></div>`).join('');
   }else{
+    box.className='wrap grid-2';
     const dms=await API.get('/api/player/dms');
     box.innerHTML=dms.map(d=>`<div class="card"><div class="row" style="align-items:center">
       <div style="width:48px;height:48px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px">🎙️</div>
@@ -256,7 +284,8 @@ async function renderRoles(){
     <p class="muted" style="margin:0 0 14px">意犹未尽？和剧本里的角色继续聊聊</p>
     <div id="role-list" class="loading">加载中…</div></div>`;
   const rs=await API.get('/api/player/roles');
-  document.getElementById('role-list').innerHTML=rs.map(r=>`<div class="card" onclick="openChat('${esc(r.name)}','${esc(r.script)}')">
+  const rl=document.getElementById('role-list'); rl.className='grid-2';
+  rl.innerHTML=rs.map(r=>`<div class="card" onclick="openChat('${esc(r.name)}','${esc(r.script)}')">
     <div class="row" style="align-items:center">
     <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--purple),var(--rose));display:flex;align-items:center;justify-content:center;font-size:26px">🎭</div>
     <div style="flex:1"><h3 style="font-size:16px">${esc(r.name)}</h3><div class="meta">${esc(r.script)}</div>
@@ -268,7 +297,7 @@ function openChat(name,script){
   chatRole=name; chatHistory=[];
   document.querySelector('.tabbar').style.display='none';
   app.innerHTML=`<div class="topbar" style="position:sticky"><h1 style="font-size:16px">🎭 ${esc(name)} <span class="muted" style="font-size:12px;font-weight:400">${esc(script)}</span></h1>
-    <span class="badge" onclick="closeChat()" style="cursor:pointer">返��</span></div>
+    <span class="badge" onclick="closeChat()" style="cursor:pointer">返回</span></div>
     <div class="chat-list" id="chat" style="padding-bottom:80px">
       <div class="msg ai">（${esc(name)}正静静看着你……说点什么吧）</div></div>
     <div class="chat-input"><input id="chat-in" placeholder="对 ${esc(name)} 说…" onkeydown="if(event.key==='Enter')sendChat()">

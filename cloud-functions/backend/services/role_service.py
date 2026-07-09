@@ -70,11 +70,21 @@ PRESET_ROLES = [
 ]
 
 
+# 置顶角色（按此顺序排在最前，其余保持原顺序）
+_PINNED = ["阿奇", "羌青瓷"]
+
+
 def get_roles():
+    def _rank(r):
+        try:
+            return _PINNED.index(r["name"])
+        except ValueError:
+            return len(_PINNED)  # 未置顶的排后面
+    ordered = sorted(PRESET_ROLES, key=_rank)
     return [
         {"name": r["name"], "script": r["script"], "avatar": r["avatar"],
          "tagline": r["tagline"]}
-        for r in PRESET_ROLES
+        for r in ordered
     ]
 
 
