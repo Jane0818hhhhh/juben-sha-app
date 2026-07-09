@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>拼本社 · 店家端</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1><span class="logo">🏪 店家端</span> <span class="muted" style="font-size:12px">解忧剧本社</span></h1>
+    <span class="badge" id="ai-badge">AI…</span>
+  </div>
+  <div id="view"></div>
+  <div class="tabbar">
+    <a data-v="dash" onclick="go('dash')" class="active"><span class="ic">📊</span>看板</a>
+    <a data-v="schedule" onclick="go('schedule')"><span class="ic">📅</span>排期</a>
+    <a data-v="scripts" onclick="go('scripts')"><span class="ic">📚</span>剧本库</a>
+    <a data-v="dms" onclick="go('dms')"><span class="ic">🎙️</span>DM</a>
+  </div>
+</div>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/merchant.js"></script>
+</body>
+</html>

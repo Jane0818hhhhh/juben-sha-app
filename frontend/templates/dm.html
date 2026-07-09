@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>拼本社 · DM端</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1><span class="logo">🎙️ DM 端</span></h1>
+    <span class="badge" id="ai-badge">AI…</span>
+  </div>
+  <div id="view"></div>
+  <div class="tabbar">
+    <a data-v="orders" onclick="go('orders')" class="active"><span class="ic">🎬</span>我的场次</a>
+    <a data-v="market" onclick="go('market')"><span class="ic">📢</span>接单市场</a>
+    <a data-v="profile" onclick="go('profile')"><span class="ic">👤</span>主页</a>
+  </div>
+</div>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/dm.js"></script>
+</body>
+</html>

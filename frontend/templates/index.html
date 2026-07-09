@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>剧本杀一站式平台</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1><span class="logo">🎭 拼本社</span></h1>
+    <span class="badge" id="ai-badge">AI 加载中…</span>
+  </div>
+
+  <div class="hero">
+    <h2>拼本 · 找店 · 测本<br>角色陪伴，一站搞定</h2>
+    <p>把散落在各处的剧本杀需求，整合成一个入口</p>
+  </div>
+
+  <div class="wrap">
+    <div class="sec-title">选择你的身份</div>
+
+    <div class="entry" onclick="location.href='/player'">
+      <div class="em">🕵️</div>
+      <div>
+        <h3>我是玩家</h3>
+        <p>测本 · 拼车组局 · 找店找本 · 角色陪伴</p>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+
+    <div class="entry" onclick="location.href='/merchant'">
+      <div class="em">🏪</div>
+      <div>
+        <h3>我是店家</h3>
+        <p>排期管理 · 剧本库 · DM 派单 · 经营看板</p>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+
+    <div class="entry" onclick="location.href='/dm'">
+      <div class="em">🎙️</div>
+      <div>
+        <h3>我是 DM</h3>
+        <p>接单市场 · 我的场次 · 个人主页</p>
+      </div>
+      <div class="arrow">›</div>
+    </div>
+
+    <div class="divider"></div>
+    <p class="muted" style="font-size:12px;text-align:center">
+      北极星·炼术师 出品 · 剧本杀垂直社交平台 Demo
+    </p>
+  </div>
+</div>
+<script>
+fetch('/api/system/info').then(r=>r.json()).then(d=>{
+  const b=document.getElementById('ai-badge');
+  if(d.llm_ready){b.textContent='AI · '+d.model;b.className='badge on';}
+  else{b.textContent='AI 降级模式';}
+});
+</script>
+</body>
+</html>

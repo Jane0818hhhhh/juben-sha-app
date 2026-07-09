@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>拼本社 · 玩家端</title>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1><span class="logo">🎭 拼本社</span></h1>
+    <span class="badge" id="ai-badge">AI…</span>
+  </div>
+  <div id="view"></div>
+  <div class="tabbar">
+    <a data-v="home" onclick="go('home')" class="active"><span class="ic">🏠</span>首页</a>
+    <a data-v="test" onclick="go('test')"><span class="ic">🔮</span>测本</a>
+    <a data-v="plaza" onclick="go('plaza')"><span class="ic">🚗</span>拼车</a>
+    <a data-v="roles" onclick="go('roles')"><span class="ic">💬</span>陪伴</a>
+    <a data-v="mine" onclick="go('mine')"><span class="ic">👤</span>我的</a>
+  </div>
+</div>
+<script src="/static/js/common.js"></script>
+<script src="/static/js/player.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+flask>=3.0
+flask-sqlalchemy>=3.1
+flask-cors>=4.0
+python-dotenv>=1.0
+openai>=1.40
+pymysql>=1.1
+requests>=2.31
