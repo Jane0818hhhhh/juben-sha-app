@@ -89,24 +89,49 @@ def static_file(filename):
 
 
 # ---------------- 页面路由 ----------------
+# 【关键】EdgeOne 预览链接靠 URL 上的 eo_token 鉴权，但浏览器请求页面里
+# 引用的 /static/*.css、/static/*.js 时不会自动带上 token，导致这些独立
+# 静态请求被平台 401 拦截 → 页面没样式。解决：把 CSS/JS 内容直接内联进
+# HTML 的 <style>/<script>，页面一次请求即拿到全部资源，不再发独立
+# /static 请求，从根本上绕过 token 问题（这也是纯 HTML 内联项目能正常
+# 显示的原因）。
+def _inline_assets(html):
+    css = STATIC_FILES.get("css/app.css", "")
+    html = html.replace(
+        '<link rel="stylesheet" href="/static/css/app.css">',
+        f"<style>{css}</style>",
+    )
+    for js_name in ("common.js", "player.js", "merchant.js", "dm.js"):
+        js = STATIC_FILES.get(f"js/{js_name}", "")
+        html = html.replace(
+            f'<script src="/static/js/{js_name}"></script>',
+            f"<script>{js}</script>",
+        )
+    return html
+
+
+def render_page(tpl):
+    return _inline_assets(render_template(tpl))
+
+
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_page("index.html")
 
 
 @app.route("/player")
 def player_app():
-    return render_template("player.html")
+    return render_page("player.html")
 
 
 @app.route("/merchant")
 def merchant_app():
-    return render_template("merchant.html")
+    return render_page("merchant.html")
 
 
 @app.route("/dm")
 def dm_app():
-    return render_template("dm.html")
+    return render_page("dm.html")
 
 
 # ---------------- 系统信息 ----------------
