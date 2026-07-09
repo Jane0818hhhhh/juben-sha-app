@@ -135,3 +135,78 @@ img{display:block;max-width:100%}
   width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
   color:#1a1520;font-size:26px;display:flex;align-items:center;justify-content:center;
   box-shadow:0 6px 20px rgba(232,185,106,.4);z-index:55;cursor:pointer}
+
+/* 搜索栏 */
+.search-bar{display:flex;gap:8px}
+.search-bar input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:11px 14px;color:var(--text);font-size:14px;outline:none}
+.search-bar input:focus{border-color:var(--gold)}
+
+/* 筛选栏 */
+.filter-bar{display:flex;gap:8px;padding:0 0 12px;flex-wrap:wrap}
+.filter-bar select,.filter-bar input{flex:1;min-width:80px;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--text);
+  font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--gold)}
+
+/* ============ 桌面端响应式 (>=768px) ============ */
+@media (min-width:768px){
+  body{background:var(--bg);display:flex;justify-content:center}
+  .app{max-width:960px;width:100%;margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line);padding-bottom:80px}
+  .topbar{max-width:960px;left:50%;transform:translateX(-50%);width:100%}
+  .topbar h1{font-size:22px}
+  .wrap{max-width:900px;margin:0 auto;padding:20px 32px}
+  .hero{padding:40px 32px;border-radius:0 0 32px 32px}
+  .hero h2{font-size:28px}
+  .hero p{font-size:15px}
+  .sec-title{font-size:18px;margin:24px 32px 14px}
+
+  /* 剧本卡网格 */
+  .script-card .cover{width:100px;height:132px}
+  .script-card .info h3{font-size:18px}
+  .meta{font-size:13px}
+
+  /* 拼局卡片 */
+  .session-card .head h3{font-size:18px!important}
+
+  /* 搜索栏 */
+  .search-bar input{font-size:16px;padding:13px 16px}
+  .search-bar .btn{padding:13px 24px;font-size:15px}
+
+  /* 筛选栏 */
+  .filter-bar select,.filter-bar input{font-size:14px;padding:10px 12px}
+
+  /* 底部导航——桌面居中 */
+  .tabbar{max-width:960px;left:50%;transform:translateX(-50%)}
+  .tabbar a{font-size:13px;padding:12px 0}
+  .tabbar a .ic{font-size:22px}
+
+  /* 聊天桌面 */
+  .chat-input{max-width:960px}
+  .msg{max-width:60%;font-size:15px}
+  .chat-list{padding:20px 32px}
+
+  /* 入口卡 */
+  .entry{padding:24px 28px;margin-bottom:16px}
+  .entry .em{font-size:40px}
+  .entry h3{font-size:19px}
+  .entry p{font-size:13px}
+
+  /* 数据看板 */
+  .stat-grid{grid-template-columns:repeat(4,1fr);gap:16px}
+  .stat .num{font-size:30px}
+  .stat .lbl{font-size:13px}
+
+  /* 表单 */
+  .field input,.field select,.field textarea{padding:12px 15px;font-size:15px}
+
+  /* 测本问卷 */
+  .q-block h3{font-size:18px}
+  .opt{padding:15px 18px;font-size:15px}
+
+  /* 标签 */
+  .tag{font-size:12px;padding:3px 10px}
+
+  /* FAB 桌面位置 */
+  .fab{bottom:100px}
+}

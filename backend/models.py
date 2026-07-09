@@ -69,18 +69,25 @@ class Script(db.Model):
     is_be = db.Column(db.Boolean, default=False)        # 是否BE(悲剧结局)
     has_horror = db.Column(db.Boolean, default=False)   # 是否含恐怖元素
     intro = db.Column(db.Text, default="")
+    roles = db.Column(db.Text, default="[]")         # JSON: [{name, gender, brief}] 角色列表
     rating = db.Column(db.Float, default=5.0)
     play_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        import json as _json
+        try:
+            _roles = _json.loads(self.roles) if self.roles else []
+        except Exception:
+            _roles = []
         return {
             "id": self.id, "title": self.title, "cover": self.cover,
             "category": self.category, "tags": self.tags.split(",") if self.tags else [],
             "player_min": self.player_min, "player_max": self.player_max,
             "duration": self.duration, "difficulty": self.difficulty,
             "is_be": self.is_be, "has_horror": self.has_horror,
-            "intro": self.intro, "rating": round(self.rating, 1),
+            "intro": self.intro, "roles": _roles,
+            "rating": round(self.rating, 1),
             "play_count": self.play_count,
         }
 
@@ -122,6 +129,8 @@ class GameSession(db.Model):
     joined_players = db.Column(db.Integer, default=1) # 已加入
     status = db.Column(db.String(20), default="recruiting")  # recruiting/full/confirmed/finished/cancelled
     note = db.Column(db.String(255), default="")
+    city = db.Column(db.String(30), default="")
+    seat_type = db.Column(db.String(30), default="普通位")  # 补贴位/CP位/恋陪/其他陪伴位
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -131,7 +140,7 @@ class GameSession(db.Model):
             "start_time": self.start_time.strftime("%Y-%m-%d %H:%M") if self.start_time else "",
             "price": self.price, "need_players": self.need_players,
             "joined_players": self.joined_players, "status": self.status,
-            "note": self.note,
+            "note": self.note, "city": self.city, "seat_type": self.seat_type,
         }
 
 

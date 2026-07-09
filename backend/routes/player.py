@@ -169,6 +169,45 @@ def test_submit():
     return jsonify(result)
 
 
+# ---- 千岛模式：搜索某剧本 → 测适合角色 ----
+@player_bp.route("/scripts/<int:sid>/role-quiz")
+def role_quiz(sid):
+    """返回该剧本的角色列表 + 测角色问卷。"""
+    s = Script.query.get_or_404(sid)
+    import json as _json
+    try:
+        roles = _json.loads(s.roles) if s.roles else []
+    except Exception:
+        roles = []
+    return jsonify({
+        "script_title": s.title,
+        "script_id": s.id,
+        "roles": roles,
+        "questions": test_service.get_role_questionnaire(),
+    })
+
+
+@player_bp.route("/scripts/<int:sid>/test-role", methods=["POST"])
+def test_role(sid):
+    """提交角色匹配问卷，AI 返回最适合的角色。"""
+    s = Script.query.get_or_404(sid)
+    data = request.json or {}
+    answers = data.get("answers", {})
+    import json as _json
+    try:
+        roles = _json.loads(s.roles) if s.roles else []
+    except Exception:
+        roles = []
+    result = test_service.recommend_role(answers, s.title, roles)
+    tr = TestResult(user_id=data.get("user_id"),
+                    answers=_json.dumps(answers, ensure_ascii=False),
+                    persona=_json.dumps(result, ensure_ascii=False),
+                    recommend=_json.dumps({"script_title": s.title, **result}, ensure_ascii=False))
+    db.session.add(tr)
+    db.session.commit()
+    return jsonify({"script_title": s.title, **result})
+
+
 # ---------------- 评价 ----------------
 @player_bp.route("/reviews", methods=["POST"])
 def add_review():
