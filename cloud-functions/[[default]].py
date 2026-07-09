@@ -47,21 +47,44 @@ app.register_blueprint(dm_bp)
 
 
 # ---------------- 冷启动初始化数据库 ----------------
+import threading
+from sqlalchemy import inspect as _sa_inspect
+
 _DB_READY = False
+_DB_LOCK = threading.Lock()
 
 
 def _ensure_db():
-    """首次请求前建表 + 灌种子数据。Serverless 冷启动会重跑，幂等。"""
+    """首次请求前建表 + 灌种子数据。
+
+    Serverless 冷启动会重跑，且同一实例可能并发进入首个请求，因此必须做到：
+    1. 线程锁串行化，避免并发同时 CREATE TABLE；
+    2. 建表前用 inspector 检查表是否已存在（/tmp/juben.db 上次冷启动可能已建好），
+       已存在则跳过，避免 "table already exists"；
+    3. 任何 create_all / seed 的重复执行异常都吞掉，保证幂等不影响请求。
+    """
     global _DB_READY
     if _DB_READY:
         return
-    with app.app_context():
-        db.create_all()
-        try:
-            seed_all()
-        except Exception as e:
-            print("[init] seed failed:", e)
-    _DB_READY = True
+    with _DB_LOCK:
+        if _DB_READY:
+            return
+        with app.app_context():
+            try:
+                insp = _sa_inspect(db.engine)
+                existing = set(insp.get_table_names())
+                expected = set(db.metadata.tables.keys())
+                # 只有当期望的表尚未全部建好时才建表；create_all 本身带 checkfirst
+                if not expected.issubset(existing):
+                    db.create_all()
+            except Exception as e:
+                # 并发或重复建表导致的 already exists 等，视为已就绪
+                print("[init] create_all skipped/failed (treated as ready):", e)
+            try:
+                seed_all()
+            except Exception as e:
+                print("[init] seed failed:", e)
+        _DB_READY = True
 
 
 @app.before_request
