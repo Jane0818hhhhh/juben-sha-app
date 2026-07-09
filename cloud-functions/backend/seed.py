@@ -1,0 +1,326 @@
+"""初始化种子数据：2025年真实热门剧本 + 三端示例。"""
+import json
+from datetime import datetime, timedelta
+from .models import db, User, Shop, Script, DMProfile, GameSession, SessionMember, Review
+
+
+# 2025年真实热门剧本（基于公开榜单/评测整理，评分来自千岛/玩家口碑的近似值）
+REAL_SCRIPTS = [
+    {"title":"流氓叙事","category":"情感","tags":"架空,本格,双强爱情,反转,演绎",
+     "player_min":6,"player_max":6,"duration":390,"difficulty":4,"is_be":False,"has_horror":False,
+     "rating":9.1,"play_count":8200,"cover":"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600",
+     "intro":"千禧年颂歌未歇，主角们已犯下所有错。双强爱情+极限拉扯+破镜重圆。6人（3男3女，不可反串），需1DM+1NPC。被玩家称为「山岗上的长风同作者」，反转不停高潮迭起。",
+     "roles":[{"name":"程聿怀","gender":"男","brief":"记者，反派爱情中的对抗路，表面疏离内心执念"},
+              {"name":"羌青瓷","gender":"女","brief":"心理医生，错位恋爱中的博弈方，理智与情感的撕裂者"},
+              {"name":"以撒","gender":"男","brief":"黑月光强势归来，前期弱势后期反转，寡妇文学男主"},
+              {"name":"缪宏谟","gender":"女","brief":"女强人，与以撒的前期女强男弱到后期两级反转"},
+              {"name":"蒋伯驾","gender":"男","brief":"疯狂事业批，与程走柳碰撞出小妈文学火花"},
+              {"name":"程走柳","gender":"女","brief":"小妈文学线核心，需要极强队友配合的情感位"}]},
+    {"title":"死亡回响","category":"推理","tags":"日式,硬核,案件清奇,逻辑流",
+     "player_min":6,"player_max":6,"duration":360,"difficulty":5,"is_be":False,"has_horror":False,
+     "rating":8.8,"play_count":5600,"cover":"https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600",
+     "intro":"2025上半年硬核推理TOP1。日式本格推理，案件设计清奇，逻辑缜密烧脑，适合进阶推理玩家。",
+     "roles":[{"name":"桐谷一真","gender":"男","brief":"刑警，理性冷静，背负旧案的执念"},
+              {"name":"佐佐木","gender":"男","brief":"法医，细节控，每个线索都不放过"},
+              {"name":"松本优","gender":"女","brief":"记者，嗅觉敏锐，追寻真相不惜代价"},
+              {"name":"山田凉子","gender":"女","brief":"律师，逻辑严密，擅长推翻证词"},
+              {"name":"田中健","gender":"男","brief":"嫌疑人，沉默寡言但每个回答都有深意"},
+              {"name":"铃木花","gender":"女","brief":"被害者家属，情感与理智的撕裂"}]},
+    {"title":"双影共秀","category":"推理","tags":"中式,豪门,层层套娃,本格",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":4,"is_be":False,"has_horror":False,
+     "rating":8.6,"play_count":4200,"cover":"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600",
+     "intro":"中式豪门背景，层层套娃式推理。2025硬核推理TOP2，氛围拉满，反转不断。",
+     "roles":[{"name":"沈家大少","gender":"男","brief":"继承人，表面纨绔实则心机深沉"},
+              {"name":"沈小姐","gender":"女","brief":"大小姐，看似天真烂漫但直觉敏锐"},
+              {"name":"管家老周","gender":"男","brief":"忠仆外表下的秘密守护者"},
+              {"name":"林探长","gender":"男","brief":"私家侦探，冷静审视每一个细节"},
+              {"name":"顾小姐","gender":"女","brief":"沈家大少的未婚妻，身世成谜"},
+              {"name":"女佣小莲","gender":"女","brief":"表面温顺，掌握关键线索的卧底"}]},
+    {"title":"关于Y的奇迹","category":"推理","tags":"日式,治愈,逻辑推理,温情",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":4,"is_be":False,"has_horror":False,
+     "rating":8.5,"play_count":3800,"cover":"https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=600",
+     "intro":"2025硬核推理TOP3。推理包裹着治愈内核，逻辑严密之余温情满满，罕见地将推理与感动融合。",
+     "roles":[{"name":"Y","gender":"男","brief":"谜之少年，一切故事的核心"},
+              {"name":"优子","gender":"女","brief":"温柔而坚强的护士，守护着秘密"},
+              {"name":"田中老师","gender":"男","brief":"退休数学教师，用逻辑寻找真相"},
+              {"name":"花子","gender":"女","brief":"活泼的学生，好奇心驱动一切"},
+              {"name":"医生","gender":"男","brief":"冷静理性的医疗者，隐藏着深情"},
+              {"name":"千代","gender":"女","brief":"寡言的老妇人，记忆里藏着奇迹"}]},
+    {"title":"如故","category":"情感","tags":"古风,疯批,BE,权谋",
+     "player_min":6,"player_max":6,"duration":330,"difficulty":4,"is_be":True,"has_horror":False,
+     "rating":9.0,"play_count":6500,"cover":"https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=600",
+     "intro":"古风疯批BE神作。权谋与虐恋交织，人物设定极具张力。2025年情感本红榜力荐，梁以忧角色出圈。",
+     "roles":[{"name":"梁以忧","gender":"男","brief":"疯批权臣，为了所爱不惜颠覆天下"},
+              {"name":"沈如故","gender":"女","brief":"故人之女，在爱与恨间撕裂"},
+              {"name":"萧将军","gender":"男","brief":"忠勇将军，守护与背叛的矛盾体"},
+              {"name":"云娘","gender":"女","brief":"江湖侠女，刀光剑影中的一抹柔情"},
+              {"name":"太子","gender":"男","brief":"被权谋裹挟的储君"},
+              {"name":"柳妃","gender":"女","brief":"后宫女子，情报网的掌控者"}]},
+    {"title":"空山","category":"情感","tags":"山村,文学,治愈,文字力",
+     "player_min":5,"player_max":6,"duration":270,"difficulty":3,"is_be":False,"has_horror":False,
+     "rating":8.7,"play_count":3900,"cover":"https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600",
+     "intro":"用文字本身的力气把人拉进故事里。不是靠堆时长和情绪轰炸，而是靠细腻文笔的静水深流。2025红榜力荐。",
+     "roles":[{"name":"阿远","gender":"男","brief":"返乡青年，寻找失落的记忆"},
+              {"name":"阿静","gender":"女","brief":"山村教师，坚守与等待"},
+              {"name":"老村长","gender":"男","brief":"沉默而有力的守护者"},
+              {"name":"小朵","gender":"女","brief":"山村少女，天真下的秘密"},
+              {"name":"陈叔","gender":"男","brief":"外来的采风画家"}]},
+    {"title":"月落洼","category":"情感","tags":"民国,家族,亲情,信件叙事",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":3,"is_be":False,"has_horror":False,
+     "rating":8.9,"play_count":7200,"cover":"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+     "intro":"2025情感本TOP1。民国三代入恩怨，「信件叙事」串联亲情线索，最终反转直击人心。玩家反馈：玩到最后一幕才发现误解了父亲二十年。",
+     "roles":[{"name":"沈望舒","gender":"女","brief":"长女，背负家族秘密的继承人"},
+              {"name":"沈月明","gender":"男","brief":"次子，追寻真相的归来者"},
+              {"name":"林姨","gender":"女","brief":"管家，见证了所有秘密的人"},
+              {"name":"赵律师","gender":"男","brief":"家族律师，法律与人情的平衡"},
+              {"name":"顾小姐","gender":"女","brief":"外来的闯入者，揭开尘封往事"},
+              {"name":"沈老先生","gender":"男","brief":"族中长辈，沉默的执棋者"}]},
+    {"title":"舍离2：断念","category":"情感","tags":"古风,仙侠,轮回,BE,哭到脱水",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":3,"is_be":True,"has_horror":False,
+     "rating":8.8,"play_count":9100,"cover":"https://images.unsplash.com/photo-1476234251651-f353703a034d?w=600",
+     "intro":"古风仙侠「哭到脱水级作品」。孟婆汤为引，在轮回中体验爱恨别离。独创「记忆剥离」机制，道具+音效沉浸感拉满。",
+     "roles":[{"name":"孟川","gender":"男","brief":"轮回中的执念者，为爱跨越三世"},
+              {"name":"白露","gender":"女","brief":"孟婆之徒，以泪为引渡人"},
+              {"name":"青锋","gender":"男","brief":"剑仙，斩断情丝只为护她"},
+              {"name":"红药","gender":"女","brief":"药灵，治愈众生却无法自愈"},
+              {"name":"墨渊","gender":"男","brief":"冥界判官，冷面下藏着深情"},
+              {"name":"素衣","gender":"女","brief":"凡间女子，一段孽缘的起点"}]},
+    {"title":"以爱之名","category":"情感","tags":"现代,社会议题,真实改编,公益",
+     "player_min":6,"player_max":6,"duration":240,"difficulty":2,"is_be":False,"has_horror":False,
+     "rating":8.6,"play_count":5800,"cover":"https://images.unsplash.com/photo-1494774157365-9e04c6720e47?w=600",
+     "intro":"根据真实事件改编，聚焦罕见病家庭。结尾「生命倒计时」环节引发广泛社会讨论，甚至带动公益捐款热潮。",
+     "roles":[{"name":"陈医生","gender":"男","brief":"主治医生，在医学局限与人文关怀间挣扎"},
+              {"name":"母亲","gender":"女","brief":"患儿母亲，用尽全力与时间赛跑"},
+              {"name":"父亲","gender":"男","brief":"沉默的顶梁柱，背后是无尽焦虑"},
+              {"name":"记者","gender":"女","brief":"追踪报道的社会记者，从旁观到参与"},
+              {"name":"志愿者","gender":"男","brief":"大学生志愿者，用善意改变世界"},
+              {"name":"护士长","gender":"女","brief":"见证了最多离别与奇迹的人"}]},
+    {"title":"年轮","category":"推理","tags":"现代,本格,逻辑流,经典",
+     "player_min":5,"player_max":5,"duration":240,"difficulty":4,"is_be":False,"has_horror":False,
+     "rating":9.0,"play_count":12000,"cover":"https://images.unsplash.com/photo-1533106497176-45ae19e68ba2?w=600",
+     "intro":"现象级经典硬核本。逻辑严谨到被誉为「年度最佳剧本」。五个角色环环相扣，时间线的精妙设计至今无人超越。",
+     "roles":[{"name":"袁本","gender":"男","brief":"警察，追寻一个跨越三十年的真相"},
+              {"name":"姚波","gender":"男","brief":"医生，理性与直觉的完美结合"},
+              {"name":"陈烁","gender":"男","brief":"程序员，用代码思维解构谜题"},
+              {"name":"刘伯钊","gender":"男","brief":"教授，博学而深不可测"},
+              {"name":"王小冉","gender":"女","brief":"记者，敏锐的直觉引领方向"}]},
+    {"title":"鸢飞戾天","category":"情感","tags":"古风,权谋,悲剧,沉浸",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":3,"is_be":True,"has_horror":False,
+     "rating":8.5,"play_count":4900,"cover":"https://images.unsplash.com/photo-1528164344705-47542687000d?w=600",
+     "intro":"血书遗物道具+沉浸氛围，权谋悲剧中每个角色的选择都令人心碎。2025红榜推荐古风情感本。",
+     "roles":[{"name":"萧景琰","gender":"男","brief":"将军，忠与爱的两难"},
+              {"name":"柳如是","gender":"女","brief":"歌伎，乱世浮萍中的清醒"},
+              {"name":"太子恒","gender":"男","brief":"被废太子，隐忍与复仇"},
+              {"name":"昭阳公主","gender":"女","brief":"和亲公主，家国与自我的撕裂"},
+              {"name":"魏国公","gender":"男","brief":"权臣，棋子还是执棋人"},
+              {"name":"上官婉儿","gender":"女","brief":"女官，笔墨间掌控朝堂"}]},
+    {"title":"古木吟","category":"情感","tags":"校园,恐怖,友情,时间循环,勇气",
+     "player_min":5,"player_max":6,"duration":240,"difficulty":3,"is_be":False,"has_horror":True,
+     "rating":8.4,"play_count":7800,"cover":"https://images.unsplash.com/photo-1472396961693-142e6e269027?w=600",
+     "intro":"校园恐怖外衣下包裹友情与牺牲。「时间循环」机制让玩家在恐惧中逐渐领悟同伴的意义，结尾集体抉择环节无数人破防。",
+     "roles":[{"name":"林川","gender":"男","brief":"班长，保护所有人的责任感"},
+              {"name":"小雨","gender":"女","brief":"转学生，温柔外表下的坚韧"},
+              {"name":"大壮","gender":"男","brief":"体育生，用蛮力保护朋友"},
+              {"name":"学霸","gender":"男","brief":"书呆子，在关键时刻的勇气"},
+              {"name":"小美","gender":"女","brief":"美术生，用画笔记录真相"}]},
+    {"title":"黑羊公馆","category":"推理","tags":"欧式,暗黑,心理,社会派",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":4,"is_be":False,"has_horror":True,
+     "rating":8.7,"play_count":4600,"cover":"https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=600",
+     "intro":"欧式暗黑心理推理。聚焦原生家庭创伤，2025年社会派推理代表作。氛围感极强，恐怖元素与深度议题并存。",
+     "roles":[{"name":"爱德华","gender":"男","brief":"心理医生，试图治愈他人却无法治愈自己"},
+              {"name":"伊丽莎白","gender":"女","brief":"贵族遗孀，优雅外表下的创伤"},
+              {"name":"詹姆斯","gender":"男","brief":"侦探，理性与直觉的矛盾体"},
+              {"name":"玛丽","gender":"女","brief":"女仆，沉默中藏着最多秘密"},
+              {"name":"威廉","gender":"男","brief":"律师，为正义还是为利益"},
+              {"name":"安娜","gender":"女","brief":"记者，用笔揭开黑羊公馆的真相"}]},
+    {"title":"月下沙利叶","category":"推理","tags":"欧式,硬核,分幕式,反转",
+     "player_min":6,"player_max":6,"duration":360,"difficulty":5,"is_be":False,"has_horror":False,
+     "rating":8.9,"play_count":5500,"cover":"https://images.unsplash.com/photo-1484950763426-56b5bf172dbb?w=600",
+     "intro":"硬核推理经典。关键线索分散在6幕中，每幕释放10%情感张力，终幕集中爆发。逻辑美感与叙事节奏完美融合。",
+     "roles":[{"name":"克里斯","gender":"男","brief":"警探，执着于真相的代价"},
+              {"name":"艾米丽","gender":"女","brief":"画家，用色彩掩饰秘密"},
+              {"name":"亨利","gender":"男","brief":"记者，第六感引领方向"},
+              {"name":"苏菲","gender":"女","brief":"舞者，肢体语言诉说着谎言"},
+              {"name":"皮特","gender":"男","brief":"作家，虚构与现实间的桥梁"},
+              {"name":"莉莉","gender":"女","brief":"歌手，声线中藏着线索"}]},
+    {"title":"山岗上的长风","category":"情感","tags":"民国,家国,热血,BE",
+     "player_min":6,"player_max":6,"duration":300,"difficulty":3,"is_be":True,"has_horror":False,
+     "rating":9.0,"play_count":8800,"cover":"https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600",
+     "intro":"《流氓叙事》同作者前作。民国家国背景，热血与悲壮交织。玩家评价：「夏日傍晚的海风，滚烫中带着灼伤的痛」。",
+     "roles":[{"name":"顾清明","gender":"男","brief":"军人，家国天下的两难抉择"},
+              {"name":"沈知秋","gender":"女","brief":"教师，用文字守护文明火种"},
+              {"name":"陆子昂","gender":"男","brief":"医生，在战场上挽救生命"},
+              {"name":"林婉儿","gender":"女","brief":"歌女，乱世中的一抹亮色"},
+              {"name":"秦先生","gender":"男","brief":"报人，笔尖上的抗争"},
+              {"name":"苏小姐","gender":"女","brief":"学生，热血与天真的燃烧"}]},
+    {"title":"窗边的女人","category":"推理","tags":"现代,本格,真实案件改编,经典",
+     "player_min":5,"player_max":6,"duration":240,"difficulty":3,"is_be":False,"has_horror":True,
+     "rating":8.5,"play_count":10500,"cover":"https://images.unsplash.com/photo-1487147264018-f937fba0c817?w=600",
+     "intro":"南京碎尸案改编的经典本格本。整体无bug，推理流畅，强烈推荐。恐怖与真实交织的沉浸体验。",
+     "roles":[{"name":"警察","gender":"男","brief":"追凶者，不放过任何一个细节"},
+              {"name":"记者","gender":"女","brief":"报道者，敏锐地嗅到异常"},
+              {"name":"邻居","gender":"男","brief":"目击者，平凡人眼中的异常"},
+              {"name":"法医","gender":"女","brief":"用科学说话的人"},
+              {"name":"嫌疑人","gender":"男","brief":"沉默的背后是真相还是伪装"}]},
+    {"title":"你好，我找不着","category":"情感","tags":"现代,都市,平行时空,爱情",
+     "player_min":6,"player_max":6,"duration":240,"difficulty":2,"is_be":False,"has_horror":False,
+     "rating":8.4,"play_count":5200,"cover":"https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=600",
+     "intro":"2025情感本TOP3。平行时空设定探讨爱情遗憾。交换记忆碎片拼凑故事，「如果重来一次」让玩家直面内心。",
+     "roles":[{"name":"阿哲","gender":"男","brief":"错过的人，平行时空里寻找答案"},
+              {"name":"小鹿","gender":"女","brief":"被错过的人，等待与释怀"},
+              {"name":"大刘","gender":"男","brief":"旁观者，见证所有错过与重逢"},
+              {"name":"菲菲","gender":"女","brief":"主动追爱的人，不给自己留遗憾"},
+              {"name":"老张","gender":"男","brief":"过来人，用经验开解年轻人"},
+              {"name":"晓晓","gender":"女","brief":"平行时空的信使"}]},
+    {"title":"虚构推理2","category":"推理","tags":"日式,硬核,诡计,逻辑",
+     "player_min":6,"player_max":6,"duration":360,"difficulty":5,"is_be":False,"has_horror":False,
+     "rating":8.8,"play_count":4700,"cover":"https://images.unsplash.com/photo-1585155770447-2f66e2a397b5?w=600",
+     "intro":"日式硬核推理续作，诡计设计精妙绝伦。2025上半年推理TOP5，适合喜欢挑战的进阶玩家。",
+     "roles":[{"name":"金田","gender":"男","brief":"侦探，不放过任何逻辑漏洞"},
+              {"name":"美雪","gender":"女","brief":"助手，直觉总能弥补推理的盲区"},
+              {"name":"真壁","gender":"男","brief":"警察，程序正义的捍卫者"},
+              {"name":"凉子","gender":"女","brief":"律师，法庭上的逻辑战"},
+              {"name":"佐藤","gender":"男","brief":"记者，挖掘故事背后的真相"},
+              {"name":"由美","gender":"女","brief":"当事人，受害者与加害者的模糊边界"}]},
+    {"title":"大梦敦煌","category":"机制","tags":"古风,阵营,博弈,还原",
+     "player_min":7,"player_max":8,"duration":360,"difficulty":4,"is_be":False,"has_horror":False,
+     "rating":8.5,"play_count":3600,"cover":"https://images.unsplash.com/photo-1533669955142-6a73332af4db?w=600",
+     "intro":"敦煌壁画为背景的大型阵营机制本。多阵营博弈+还原历史，策略深度与沉浸感并重。2025机制本代表作。",
+     "roles":[{"name":"画师","gender":"男","brief":"壁画的创作者，笔下有乾坤"},
+              {"name":"商队首领","gender":"男","brief":"丝路商人，信息与财富的掌控者"},
+              {"name":"舞伎","gender":"女","brief":"飞天舞者，身姿下藏着身份"},
+              {"name":"将军","gender":"男","brief":"戍边将领，忠诚与野心的拉扯"},
+              {"name":"公主","gender":"女","brief":"和亲公主，政治博弈的棋子还是棋手"},
+              {"name":"僧侣","gender":"男","brief":"西域高僧，传播信仰还是另有目的"},
+              {"name":"侠客","gender":"女","brief":"江湖人士，自由与使命的化身"},
+              {"name":"术士","gender":"男","brief":"占星者，预知与改变的矛盾"}]},
+    {"title":"酒大奇迹","category":"欢乐","tags":"现代,喝酒,社交,搞笑",
+     "player_min":6,"player_max":10,"duration":210,"difficulty":1,"is_be":False,"has_horror":False,
+     "rating":8.3,"play_count":14000,"cover":"https://images.unsplash.com/photo-1575444758702-4a6b9222336e?w=600",
+     "intro":"欢乐社交本经典。以「喝酒」为核心机制，轻松搞笑，萌新友好。聚会团建首选，笑到停不下来。",
+     "roles":[{"name":"酒仙","gender":"男","brief":"千杯不醉的传说"},
+              {"name":"品酒师","gender":"女","brief":"舌尖上的侦探"},
+              {"name":"调酒师","gender":"男","brief":"鸡尾酒魔术师"},
+              {"name":"酒保","gender":"女","brief":"吧台后的倾听者"},
+              {"name":"收藏家","gender":"男","brief":"酒窖里藏着故事"},
+              {"name":"新手","gender":"女","brief":"第一次喝酒的菜鸟"}]},
+]
+
+SEAT_TYPES = ["普通位", "补贴位", "CP位", "恋陪", "陪伴位"]
+
+def seed_all():
+    if User.query.first():
+        return
+
+    # 用户
+    owner = User(nickname="解忧剧本社-店长", phone="13800000001", role="merchant", city="成都")
+    dm1 = User(nickname="DM·阿墨", phone="13800000002", role="dm", city="成都")
+    dm2 = User(nickname="DM·小唐", phone="13800000003", role="dm", city="成都")
+    dm3 = User(nickname="DM·老赵", phone="13800000004", role="dm", city="北京")
+    p1 = User(nickname="推理狂魔", phone="13800000101", role="player", city="成都",
+              profile_tags="推理,硬核,老玩家")
+    p2 = User(nickname="情感玩家Nana", phone="13800000102", role="player", city="成都",
+              profile_tags="情感,沉浸,爱BE")
+    p3 = User(nickname="欢乐小王子", phone="13800000103", role="player", city="北京",
+              profile_tags="欢乐,社交,萌新")
+    db.session.add_all([owner, dm1, dm2, dm3, p1, p2, p3])
+    db.session.flush()
+
+    # 门店
+    shop1 = Shop(owner_id=owner.id, name="解忧剧本社(春熙路店)", city="成都",
+                 address="成都市锦江区春熙路8号3F", intro="成都口碑老店，情感/推理双强，DM带本细腻。",
+                 rating=4.8, room_count=5,
+                 cover="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600")
+    shop2 = Shop(owner_id=owner.id, name="迷雾探案馆(太古里店)", city="成都",
+                 address="成都市锦江区中纱帽街太古里", intro="硬核推理与阵营本专精，还原度极高。",
+                 rating=4.6, room_count=4,
+                 cover="https://images.unsplash.com/photo-1606167668584-78701c57f13d?w=600")
+    shop3 = Shop(owner_id=owner.id, name="剧本码头(朝阳大悦城店)", city="北京",
+                 address="北京市朝阳区朝阳北路大悦城B1", intro="北京知名剧本杀品牌，全类型覆盖，周末场场爆满。",
+                 rating=4.7, room_count=6,
+                 cover="https://images.unsplash.com/photo-1500534623283-312aade485b7?w=600")
+    db.session.add_all([shop1, shop2, shop3])
+    db.session.flush()
+
+    # DM
+    dmp1 = DMProfile(user_id=dm1.id, shop_id=shop1.id, good_at="情感本,还原本",
+                     style="细腻,共情,声音好听", rating=4.9, fans=1280,
+                     intro="从业3年，情感本催泪担当，带过300+场。")
+    dmp2 = DMProfile(user_id=dm2.id, shop_id=shop2.id, good_at="推理本,阵营本",
+                     style="逻辑清晰,掌控全场", rating=4.7, fans=860,
+                     intro="硬核推理DM，擅长复杂机制本。")
+    dmp3 = DMProfile(user_id=dm3.id, shop_id=shop3.id, good_at="欢乐本,社交本",
+                     style="幽默,控场强,即兴发挥", rating=4.6, fans=520,
+                     intro="欢乐本专业户，让你笑到停不下来。")
+    db.session.add_all([dmp1, dmp2, dmp3])
+    db.session.flush()
+
+    # 剧本（真实数据）
+    scripts = []
+    for s in REAL_SCRIPTS:
+        scripts.append(Script(
+            title=s["title"], category=s["category"], tags=s["tags"],
+            player_min=s["player_min"], player_max=s["player_max"],
+            duration=s["duration"], difficulty=s["difficulty"],
+            is_be=s["is_be"], has_horror=s["has_horror"],
+            rating=s["rating"], play_count=s["play_count"],
+            intro=s["intro"], cover=s["cover"],
+            roles=json.dumps(s["roles"], ensure_ascii=False),
+        ))
+    db.session.add_all(scripts)
+    db.session.flush()
+
+    # 拼本局（多城市、多补位类型）
+    now = datetime.now()
+    sessions = [
+        GameSession(script_id=scripts[0].id, shop_id=shop1.id, dm_id=dmp1.id, host_id=p2.id,
+                    start_time=now+timedelta(days=1, hours=3), price=228, need_players=6,
+                    joined_players=4, status="recruiting", city="成都", seat_type="CP位",
+                    note="差一对CP位，求情侣档上车~"),
+        GameSession(script_id=scripts[1].id, shop_id=shop2.id, dm_id=dmp2.id, host_id=p1.id,
+                    start_time=now+timedelta(days=2, hours=1), price=268, need_players=6,
+                    joined_players=5, status="recruiting", city="成都", seat_type="普通位",
+                    note="硬核推理局，差1人满车，老玩家优先"),
+        GameSession(script_id=scripts[0].id, shop_id=shop3.id, dm_id=dmp3.id, host_id=p3.id,
+                    start_time=now+timedelta(days=1, hours=6), price=238, need_players=6,
+                    joined_players=3, status="recruiting", city="北京", seat_type="恋陪",
+                    note="《流氓叙事》恋陪位空缺，想找温柔小姐姐陪聊~"),
+        GameSession(script_id=scripts[4].id, shop_id=shop1.id, dm_id=dmp1.id, host_id=p2.id,
+                    start_time=now+timedelta(hours=5), price=198, need_players=6,
+                    joined_players=6, status="full", city="成都", seat_type="普通位",
+                    note="《如故》已满员，可候补"),
+        GameSession(script_id=scripts[18].id, shop_id=shop3.id, dm_id=dmp3.id, host_id=p3.id,
+                    start_time=now+timedelta(days=3, hours=2), price=128, need_players=8,
+                    joined_players=4, status="recruiting", city="北京", seat_type="补贴位",
+                    note="《酒大奇迹》周中场，补贴价128，快来喝酒~"),
+        GameSession(script_id=scripts[14].id, shop_id=shop2.id, dm_id=dmp2.id, host_id=p1.id,
+                    start_time=now+timedelta(days=1, hours=8), price=258, need_players=6,
+                    joined_players=2, status="recruiting", city="成都", seat_type="陪伴位",
+                    note="《山岗上的长风》情感陪伴位，需要有耐心的陪伴型玩家"),
+    ]
+    db.session.add_all(sessions)
+    db.session.flush()
+
+    db.session.add_all([
+        SessionMember(session_id=sessions[0].id, user_id=p2.id),
+        SessionMember(session_id=sessions[1].id, user_id=p1.id),
+        SessionMember(session_id=sessions[2].id, user_id=p3.id),
+        SessionMember(session_id=sessions[4].id, user_id=p3.id),
+        SessionMember(session_id=sessions[5].id, user_id=p1.id),
+    ])
+
+    db.session.add_all([
+        Review(user_id=p2.id, target_type="script", target_id=scripts[0].id, rating=5,
+               content="今年最佳情感本！双强爱情线张力拉满，程走柳的小妈文学线绝了。"),
+        Review(user_id=p1.id, target_type="dm", target_id=dmp2.id, rating=5,
+               content="逻辑超清晰，死亡回响这种复杂本讲得明明白白。"),
+        Review(user_id=p1.id, target_type="shop", target_id=shop1.id, rating=5,
+               content="环境好，服务到位，会再来。"),
+        Review(user_id=p3.id, target_type="script", target_id=scripts[0].id, rating=5,
+               content="第一次玩情感本就哭了，流氓叙事名不虚传！"),
+        Review(user_id=p2.id, target_type="script", target_id=scripts[14].id, rating=5,
+               content="山岗上的长风后劲太大了，三天没走出来。"),
+    ])
+
+    db.session.commit()
+    print("[seed] 初始化完成（20个真实热门剧本 + 多城市多补位类型拼局）")
