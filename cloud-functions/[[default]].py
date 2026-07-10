@@ -27,6 +27,7 @@ from backend.services.llm import llm_status
 from backend.routes.player import player_bp
 from backend.routes.merchant import merchant_bp
 from backend.routes.dm import dm_bp
+from backend.routes.auth import auth_bp
 
 from templates_data import TEMPLATES
 from static_data import STATIC_FILES
@@ -44,6 +45,7 @@ db.init_app(app)
 app.register_blueprint(player_bp)
 app.register_blueprint(merchant_bp)
 app.register_blueprint(dm_bp)
+app.register_blueprint(auth_bp)
 
 
 # ---------------- 冷启动初始化数据库 ----------------

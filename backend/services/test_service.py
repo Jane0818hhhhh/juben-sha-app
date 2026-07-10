@@ -4,6 +4,7 @@
 """
 import json
 from .llm import chat_json
+from .search_service import search_context
 
 # 测角色问卷（比测本更聚焦角色匹配）
 ROLE_QUESTIONNAIRE = [
@@ -48,10 +49,14 @@ def recommend_role(answers, script_title, roles):
         "必须返回严格JSON。"
     )
     role_brief = [{"name":r["name"], "gender":r.get("gender","?"), "brief":r.get("brief","")} for r in roles]
+    # 联网检索该剧本的真实口碑/角色评价，让推荐更贴合实际（无结果则为空串，不影响）
+    web = search_context(f"{script_title} 剧本杀 角色 测评 适合", cnt=4)
+    web_block = f"\n{web}\n" if web else ""
     user = (
         f"剧本：《{script_title}》\n"
         f"角色列表：{json.dumps(role_brief, ensure_ascii=False)}\n"
-        f"玩家问卷答案：{json.dumps(answers, ensure_ascii=False)}\n\n"
+        f"玩家问卷答案：{json.dumps(answers, ensure_ascii=False)}\n"
+        f"{web_block}\n"
         "返回 JSON：\n"
         "{\n"
         '  "primary": "最推荐的角色名",\n'

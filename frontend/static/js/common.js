@@ -1,8 +1,22 @@
 // 共享工具
+// ---- 登录态（localStorage）----
+const Auth = {
+  get token(){ return localStorage.getItem('juben_token') || ''; },
+  get user(){ try{ return JSON.parse(localStorage.getItem('juben_user')||'null'); }catch(e){ return null; } },
+  get uid(){ const u=Auth.user; return u ? u.id : null; },
+  set(token, user){ localStorage.setItem('juben_token', token); localStorage.setItem('juben_user', JSON.stringify(user)); },
+  clear(){ localStorage.removeItem('juben_token'); localStorage.removeItem('juben_user'); },
+  get isLogin(){ return !!Auth.token; },
+};
+function _authHeaders(extra){
+  const h = Object.assign({}, extra||{});
+  if(Auth.token) h['Authorization'] = 'Bearer ' + Auth.token;
+  return h;
+}
 const API = {
-  get: (u) => fetch(u).then(r => r.json()),
+  get: (u) => fetch(u, {headers:_authHeaders()}).then(r => r.json()),
   post: (u, body) => fetch(u, {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST', headers: _authHeaders({'Content-Type': 'application/json'}),
     body: JSON.stringify(body || {})
   }).then(r => r.json()),
 };

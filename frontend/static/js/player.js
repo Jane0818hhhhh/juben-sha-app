@@ -211,7 +211,7 @@ function renderQuiz(){
 function pick(qid,k,el){answers[qid]=k;el.parentElement.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');document.getElementById('submit-test').disabled=Object.keys(answers).length<qList.length;}
 async function submitTest(){
   const btn=document.getElementById('submit-test'); btn.textContent='AI 分析中…'; btn.disabled=true;
-  const r=await API.post('/api/player/test/submit',{answers});
+  const r=await API.post('/api/player/test/submit',{answers,user_id:Auth.uid});
   app.innerHTML=`<div class="wrap">
     <div class="card" style="background:linear-gradient(160deg,#2a2140,#1a1526);text-align:center;padding:24px">
       <div class="muted" style="font-size:13px">你的玩家人设</div>
@@ -313,22 +313,75 @@ async function sendChat(){
   tip.textContent=r.reply||'（信号中断）'; chatHistory.push({role:'assistant',content:r.reply||''}); box.scrollTop=box.scrollHeight;
 }
 
-function renderMine(){
+async function renderMine(){
+  if(!Auth.isLogin){ return renderLogin(); }
   app.innerHTML=`<div class="wrap"><div class="sec-title">👤 我的</div>
+    <div id="me-body" class="loading">加载中…</div></div>`;
+  const d = await API.get('/api/auth/me');
+  if(d.error){ Auth.clear(); return renderLogin(); }
+  const u = d.user||{};
+  const sessions = (d.my_sessions||[]).map(s=>
+    `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+      · 《${esc(s.script_title)}》${s.is_host?'<span class="tag">我发起</span>':''}
+      <div class="muted" style="font-size:12px">${esc(s.shop_name)} · ${s.start_time} · ${s.status==='full'?'已满员':'招募中'}</div></div>`
+  ).join('') || '<p class="muted" style="font-size:13px">还没有拼过局，去拼车广场上车吧～</p>';
+  const tests = (d.my_tests||[]).map(t=>{
+    const first=(t.recommend&&t.recommend[0])||{};
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--line)">
+      <span class="muted" style="font-size:12px">${t.created_at}</span>
+      ${first.title?` · 推荐《${esc(first.title)}》`:''}</div>`;
+  }).join('') || '<p class="muted" style="font-size:13px">还没有测本记录，去测本页试试～</p>';
+  document.getElementById('me-body').className='';
+  document.getElementById('me-body').innerHTML=`
     <div class="card" style="text-align:center;padding:24px">
     <div style="width:64px;height:64px;border-radius:50%;background:var(--card2);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:30px">🕵️</div>
-    <h3>情感玩家Nana</h3><div class="muted" style="font-size:13px">成都 · 情感/沉浸/爱BE</div></div>
-    <div class="card"><b>我的局</b><p class="muted" style="font-size:13px;margin-top:6px">· 《流氓叙事》CP位（明天18:00）<br>· 《如故》（已满员）</p></div>
-    <div class="card"><b>测本记录</b><p class="muted" style="font-size:13px;margin-top:6px">《流氓叙事》→ 推荐角色：程走柳</p></div>
-    <button class="btn block ghost" onclick="location.href='/'">切换身份</button></div>`;
+    <h3>${esc(u.nickname||'玩家')}</h3><div class="muted" style="font-size:13px">${esc(u.city||'')} ${esc(u.phone||'')}</div></div>
+    <div class="card"><b>我的局</b><div style="margin-top:6px">${sessions}</div></div>
+    <div class="card"><b>测本记录</b><div style="margin-top:6px">${tests}</div></div>
+    <button class="btn block ghost" onclick="logout()">退出登录</button>`;
 }
+
+// ---------- 登录 ----------
+function renderLogin(){
+  app.innerHTML=`<div class="wrap"><div class="sec-title">👤 登录 / 注册</div>
+    <p class="muted" style="margin:0 0 16px">手机号登录，同步你的拼局与测本记录</p>
+    <div class="card" style="padding:20px">
+      <input id="lg-phone" placeholder="请输入手机号" style="width:100%;margin-bottom:12px" maxlength="11">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input id="lg-code" placeholder="验证码" style="flex:1" maxlength="4">
+        <button class="btn ghost" id="lg-send" onclick="sendCode()" style="white-space:nowrap">获取验证码</button>
+      </div>
+      <button class="btn block" onclick="doLogin()">登录 / 注册</button>
+      <p class="muted" style="font-size:12px;margin-top:12px;text-align:center">未注册的手机号将自动创建账号</p>
+    </div></div>`;
+}
+async function sendCode(){
+  const phone=document.getElementById('lg-phone').value.trim();
+  const r=await API.post('/api/auth/send-code',{phone});
+  if(r.error){alert(r.error);return;}
+  const c=document.getElementById('lg-code'); if(c&&r.demo_code)c.value=r.demo_code;
+  alert(r.message||'验证码已发送');
+}
+async function doLogin(){
+  const phone=document.getElementById('lg-phone').value.trim();
+  const code=document.getElementById('lg-code').value.trim();
+  const r=await API.post('/api/auth/login',{phone,code});
+  if(r.error){alert(r.error);return;}
+  Auth.set(r.token, r.user);
+  renderMine();
+}
+function logout(){ Auth.clear(); renderLogin(); }
 
 async function scriptDetail(id){const s=await API.get('/api/player/scripts/'+id);openRoleTest(s);}
 async function sessionDetail(id){
   const s=await API.get('/api/player/sessions/'+id);
   const ok=s.status==='recruiting';
   if(confirm(`《${s.script_title}》\n${s.shop_name} · ${s.start_time} · ${s.city}\nDM ${s.dm_name} · ¥${s.price} · ${s.seat_type}\n${s.joined_players}/${s.need_players}\n${s.note}\n\n${ok?'点确定上车拼局':'该局已满员'}`)){
-    if(ok){const r=await API.post('/api/player/sessions/'+id+'/join',{user_id:5});if(r.error)alert(r.error);else{alert('上车成功！');go('plaza');}}
+    if(ok){
+      if(!Auth.isLogin){ if(confirm('上车需要先登录，去登录？')) go('mine'); return; }
+      const r=await API.post('/api/player/sessions/'+id+'/join',{user_id:Auth.uid});
+      if(r.error)alert(r.error);else{alert('上车成功！');go('plaza');}
+    }
   }
 }
 async function shopDetail(id){
