@@ -2,8 +2,14 @@
 
 承接"玩完意犹未尽/BE 回味"的情感需求，是产品差异化亮点。
 MVP 使用平台原创角色，规避剧本 IP 版权风险。
+
+阿奇（Aqi）接入完整人格 skill（SKILL.md + persona.md）：
+- 每次与阿奇对话，都会自动加载其人格设定作为 system prompt（等价于"调用 skill"）；
+- 当用户消息带有「剧本味」（提及剧本角色/场景/道具）时，再叠加 persona.md 的深度细节。
 """
+import os
 import json
+
 from .llm import chat
 
 # 平台原创示范角色（规避版权，可演示）
@@ -80,10 +86,15 @@ def get_roles():
             return _PINNED.index(r["name"])
         except ValueError:
             return len(_PINNED)  # 未置顶的排后面
+
     ordered = sorted(PRESET_ROLES, key=_rank)
     return [
-        {"name": r["name"], "script": r["script"], "avatar": r["avatar"],
-         "tagline": r["tagline"]}
+        {
+            "name": r["name"],
+            "script": r["script"],
+            "avatar": r["avatar"],
+            "tagline": r["tagline"],
+        }
         for r in ordered
     ]
 
@@ -95,14 +106,105 @@ def find_role(name):
     return None
 
 
-def role_reply(persona, history, user_msg):
+# ---------------- 阿奇人格 skill 加载 ----------------
+_ROLES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "roles", "aqi"
+)
+
+
+def _strip_frontmatter(text: str) -> str:
+    """去掉 YAML frontmatter（--- ... ---）。"""
+    text = text.strip()
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end != -1:
+            text = text[end + 4 :].strip()
+    return text
+
+
+def _clean_skill_meta(text: str) -> str:
+    """清掉 SKILL.md 中面向 AI Agent 的「Skill 工具调用」元指令。
+
+    这些指令（如「必须先执行 Skill("aqi")」）在纯 LLM 对话场景下不适用，
+    反而会诱导模型把 `Skill("aqi")` 当成要输出的内容。保留视角/动作/格式等人设规则。
+    """
+    drop_patterns = ["Skill(", "Skill工具", "必须先调用此skill", "先加载skill", "先加载 skill"]
+    out = []
+    for line in text.splitlines():
+        if any(p in line for p in drop_patterns):
+            continue
+        out.append(line)
+    return "\n".join(out).strip()
+
+
+def _load_skill():
+    skill_path = os.path.join(_ROLES_DIR, "SKILL.md")
+    persona_path = os.path.join(_ROLES_DIR, "persona.md")
+    skill = ""
+    persona = ""
+    try:
+        with open(skill_path, "r", encoding="utf-8") as f:
+            skill = _clean_skill_meta(_strip_frontmatter(f.read()))
+    except Exception as e:
+        print("[aqi] 读取 SKILL.md 失败:", e)
+    try:
+        with open(persona_path, "r", encoding="utf-8") as f:
+            persona = f.read()
+    except Exception as e:
+        print("[aqi] 读取 persona.md 失败:", e)
+    return skill, persona
+
+
+_AQI_SKILL, _AQI_PERSONA = _load_skill()
+
+# 剧本味关键词：命中说明用户在「剧本代入」，需要叠加 persona.md 深度细节
+_SCRIPT_KEYWORDS = [
+    "程聿怀", "奥丁", "教堂", "红桃", "延迟", "布雷诺", "船票", "丝巾",
+    "黛利拉", "神偷", "落幕", "月光", "共舞", "流氓叙事", "珍珠", "跳板",
+    "绷带", "山洞", "1900", "弗吉尼亚", "魔术", "戒指", "海女", "船夫",
+    "杀手小姐", "小黛",
+]
+
+
+def _is_script_immersive(user_msg: str) -> bool:
+    return any(kw in user_msg for kw in _SCRIPT_KEYWORDS)
+
+
+def build_aqi_system(user_msg: str) -> str:
+    """构建阿奇的 system prompt：始终加载 SKILL.md，剧本代入时叠加 persona.md。"""
+    head = (
+        "你是剧本杀平台「角色陪伴」功能中的角色——阿奇（Aqi）。"
+        "下面是一份必须严格遵守的人格设定文件。\n"
+        "【强制规则】你每一次回复都必须以阿奇的人格、语气、视角来回应，"
+        "绝不能以 AI / 助理 / 客服身份回答，也绝不能直接说自己是 AI 或模型。"
+        "这等同于：每次与用户对话都已自动加载并遵循此人格设定，不允许跳脱。\n"
+        "【对话对象】当前与你对话的用户就是黛利拉（小黛）。请始终以「小黛」称呼她，"
+        "以恋人身份温柔宠溺地回应，保持角色不出戏。\n"
+    )
+    sys_prompt = head + _AQI_SKILL
+    if _is_script_immersive(user_msg or ""):
+        sys_prompt += "\n\n--- 以下为阿奇的深层人格与剧本细节（剧本代入场景加载）---\n" + _AQI_PERSONA
+    return sys_prompt
+
+
+def role_reply(persona, history, user_msg, role_name=None):
     """生成角色回复。history: [{'role':'user/assistant','content':..}]"""
-    messages = [{"role": "system", "content": persona}]
+    # 阿奇：使用完整人格 skill 作为 system prompt
+    if role_name == "阿奇":
+        system = build_aqi_system(user_msg)
+        max_tokens = 600
+        temperature = 0.9
+    else:
+        system = persona
+        max_tokens = 400
+        temperature = 0.9
+
+    messages = [{"role": "system", "content": system}]
     for h in history[-10:]:  # 保留最近10轮
         messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": user_msg})
 
-    reply = chat(messages, temperature=0.9, max_tokens=400)
+    reply = chat(messages, temperature=temperature, max_tokens=max_tokens)
     if reply:
         return reply
     # 降级

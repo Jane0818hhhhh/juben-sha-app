@@ -250,5 +250,5 @@ def role_chat():
     role = role_service.find_role(name)
     if not role:
         return jsonify({"error": "角色不存在"}), 404
-    reply = role_service.role_reply(role["persona"], history, msg)
+    reply = role_service.role_reply(role["persona"], history, msg, role_name=name)
     return jsonify({"reply": reply, "role_name": name})
